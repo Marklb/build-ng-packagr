@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "description": "Angular Build Architect for ng-packagr with @angular-devkit/build-angular like asset handling",
   "scripts": {
-    "test": "./scripts/test.sh",
-    "build": "./scripts/build.sh"
+    "test": "sh ./scripts/test.sh",
+    "build": "sh ./scripts/build.sh"
   },
   "repository": {
     "type": "git",
