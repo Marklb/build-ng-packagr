@@ -9,9 +9,9 @@ import {
   resolve,
   virtualFs,
 } from '@angular-devkit/core';
-import { AssetPatternClass } from './schema';
+import { AssetPatternClass, SingleAssetPatternClass } from './schema';
 
-export type AssetPattern = string | AssetPatternClass;
+export type AssetPattern = string | AssetPatternClass | SingleAssetPatternClass;
 
 export class MissingAssetSourceRootException extends BaseException {
   constructor(path: String) {
@@ -25,7 +25,7 @@ export function normalizeAssetPatterns(
   root: Path,
   projectRoot: Path,
   maybeSourceRoot: Path | undefined,
-): AssetPatternClass[] {
+): (AssetPatternClass | SingleAssetPatternClass)[] {
   // When sourceRoot is not available, we default to ${projectRoot}/src.
   const sourceRoot = maybeSourceRoot || join(projectRoot, 'src');
   const resolvedSourceRoot = resolve(root, sourceRoot);

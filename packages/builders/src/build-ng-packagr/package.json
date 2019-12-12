@@ -1,5 +1,5 @@
 {
-  "name": "@linnenschmidt/build-ng-packagr",
+  "name": "@marklb/build-ng-packagr",
   "version": "9.0.0-next.0",
   "description": "Angular Build Architect for ng-packagr with asset handling",
   "keywords": [
@@ -14,14 +14,14 @@
   "builders": "builders.json",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/linnenschmidt/build-ng-packagr.git"
+    "url": "git+https://github.com/marklb/build-ng-packagr.git"
   },
-  "author": "Linnenschmidt <xpdcpjzz+github@gmail.com>",
+  "author": "MarkB <markberry867@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/linnenschmidt/build-ng-packagr/issues"
+    "url": "https://github.com/marklb/build-ng-packagr/issues"
   },
-  "homepage": "https://github.com/linnenschmidt/build-ng-packagr#readme",
+  "homepage": "https://github.com/marklb/build-ng-packagr#readme",
   "dependencies": {
     "@angular-devkit/architect": "0.900.0-next.8",
     "@angular-devkit/build-ng-packagr": "~0.900.0-next.8",

@@ -8,7 +8,7 @@ import * as log from 'ng-packagr/lib/util/log';
 import * as path from 'path';
 import { Observable, from } from 'rxjs';
 import { AssetPattern, normalizeAssetPatterns } from './assets-patterns';
-import { AssetPatternClass, Schema as NgPackagrBuilderOptions } from './schema';
+import { AssetPatternClass, Schema as NgPackagrBuilderOptions, SingleAssetPatternClass } from './schema';
 
 export function handleAssets(
   context: BuilderContext,
@@ -34,8 +34,14 @@ export function handleAssets(
       undefined,
     );
 
+    log.info(JSON.stringify({ assets: assets }, null, 2))
+
     return moveAssets(ngPackage.src, ngPackage.dest, assets);
   }));
+}
+
+function isSinglePattern(asset: any): boolean {
+  return asset.inputFile !== undefined
 }
 
 /**
@@ -49,56 +55,83 @@ function moveAssets(
 ): Promise<any> {
   try {
     const copyWebpackPluginPatterns = assets.map(
-      (asset: AssetPatternClass) => {
-        // Resolve input paths relative to workspace root and add slash at the end.
-        asset.input = path.resolve(src, asset.input).replace(/\\/g, '/');
-        asset.input = asset.input.endsWith('/')
-          ? asset.input
-          : asset.input + '/';
-        asset.output = asset.output.endsWith('/')
-          ? asset.output
-          : asset.output + '/';
+      (_asset: AssetPatternClass | SingleAssetPatternClass) => {
+        if (!isSinglePattern(_asset)) {
+          const asset = _asset as AssetPatternClass
+          // Resolve input paths relative to workspace root and add slash at the end.
+          asset.input = path.resolve(src, asset.input).replace(/\\/g, '/');
+          asset.input = asset.input.endsWith('/')
+            ? asset.input
+            : asset.input + '/';
+          asset.output = asset.output.endsWith('/')
+            ? asset.output
+            : asset.output + '/';
 
-        if (asset.output.startsWith('..')) {
-          const message =
-            'An asset cannot be written to a location outside of the output path.';
-          throw new Error(message);
+          if (asset.output.startsWith('..')) {
+            const message =
+              'An asset cannot be written to a location outside of the output path.';
+            throw new Error(message);
+          }
+
+          return {
+            context: asset.input,
+            // Now we remove starting slash to make Webpack place it from the output root.
+            to: asset.output.replace(/^\//, ''),
+            ignore: asset.ignore,
+            from: {
+              glob: asset.glob,
+              dot: true,
+            },
+          };
+        } else {
+          const asset = _asset as SingleAssetPatternClass
+          // log.info('handle single')
+          // log.info(JSON.stringify(asset, null, 2))
+
+          const inputFile = path.resolve(src, asset.inputFile).replace(/\\/g, '/');
+          const outputFile = path.join(dest, asset.outputFile)
+
+          return {
+            // context: asset.inputFile,
+            // Now we remove starting slash to make Webpack place it from the output root.
+            to: outputFile.replace(/^\//, ''),
+            // ignore: asset.ignore,
+            from: inputFile,
+            toType: 'file'
+          };
         }
-
-        return {
-          context: asset.input,
-          // Now we remove starting slash to make Webpack place it from the output root.
-          to: asset.output.replace(/^\//, ''),
-          ignore: asset.ignore,
-          from: {
-            glob: asset.glob,
-            dot: true,
-          },
-        };
       },
     );
 
     const copyPromises = copyWebpackPluginPatterns.map(rule => {
-      const pattern = rule.context + rule.from.glob;
+      // log.info('rule')
+      // log.info(JSON.stringify(rule, null, 2))
+      if (rule.toType !== 'file') {
+        const pattern = rule.context + (rule.from as any).glob;
 
-      return globby(pattern, { dot: rule.from.dot }).then(entries => {
-        entries.forEach(entry => {
-          const cleanFilePath = entry.replace(rule.context, '');
-          const to = path.resolve(dest, rule.to, cleanFilePath);
-          const pathToFolder = path.dirname(to);
-          pathToFolder.split(path.sep).reduce((p, folder) => {
-            p += folder + path.sep;
-            if (!fs.existsSync(p)) {
-              fs.mkdirSync(p);
-            }
-            return p;
-          }, '');
+        return globby(pattern, { dot: (rule.from as any).dot }).then(entries => {
+          entries.forEach(entry => {
+            const cleanFilePath = entry.replace((rule as any).context, '');
+            const to = path.resolve(dest, rule.to, cleanFilePath);
+            const pathToFolder = path.dirname(to);
+            pathToFolder.split(path.sep).reduce((p, folder) => {
+              p += folder + path.sep;
+              if (!fs.existsSync(p)) {
+                fs.mkdirSync(p);
+              }
+              return p;
+            }, '');
 
-          fs.copyFileSync(entry, to);
-          log.success(` - from: ${entry}`);
-          log.success(` - to: ${to}`);
+            fs.copyFileSync(entry, to);
+            log.success(` - from: ${entry}`);
+            log.success(` - to: ${to}`);
+          });
         });
-      });
+      } else {
+        fs.copyFileSync(rule.from as string, rule.to);
+        log.success(` -+ from: ${rule.from}`);
+        log.success(` -+ to: ${rule.to}`);
+      }
     });
 
     return Promise.all(copyPromises);

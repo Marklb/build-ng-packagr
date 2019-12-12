@@ -64,6 +64,24 @@
           ]
         },
         {
+          "type": "object",
+          "properties": {
+            "inputFile": {
+              "type": "string",
+              "description": "The input file."
+            },
+            "outputFile": {
+              "type": "string",
+              "description": "Absolute path within the output."
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "inputFile",
+            "outputFile"
+          ]
+        },
+        {
           "type": "string"
         }
       ]
